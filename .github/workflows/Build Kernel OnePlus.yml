@@ -717,6 +717,24 @@ jobs:
           grep -nE '^(REPO_OWNER|REPO_NAME|REPO_BRANCH|KSU_VERSION_API|KSU_VERSION_FULL|VERSION_TAG|GIT_BIN|CURL_BIN)' kernel/Makefile
           echo "::endgroup::"
 
+      - name: Patch trusted manager signature + align version (com.hh.hh)
+        run: |
+          set -e
+          cd kernel_workspace/kernel_platform
+          # 1) 注入 com.hh.hh 管理器签名
+          AS=$(grep -rl "apk_sign_keys\[\]" . 2>/dev/null | head -1)
+          [ -z "$AS" ] && AS=$(grep -rl "947ae944f3de4ed4" . 2>/dev/null | head -1)
+          if [ -z "$AS" ]; then echo "ERROR: apk_sign.c not found"; exit 1; fi
+          echo "sign file: $AS"
+          sed -i "/947ae944f3de4ed4/a\\    { 0x02e0, \"1b2d93938905fdad97da96c951be62d57a6e9eb6b1ca4cff4bb10327b204e7e2\" }, // com.hh.hh HH" "$AS"
+          # 2) 对齐 KSU 版本到 40839(消红字)—— 注意源码里冒号前有多个空格
+          MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | grep -iE "makefile" | head -1)
+          [ -z "$MK" ] && MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | head -1)
+          if [ -z "$MK" ]; then echo "ERROR: KSU Makefile not found"; find . -iname Makefile | xargs grep -l VERSION_OFFSET 2>/dev/null | head; exit 1; fi
+          echo "makefile: $MK"
+          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40839|" "$MK"
+          echo "== verify =="; grep -nE "^KSU_VERSION[[:space:]]*:=|1b2d9393" "$MK" "$AS"
+
       - name: Apply Fake Patches
         if: ${{ github.event.inputs.SUSFS_META != '-1' }}
         run: |
