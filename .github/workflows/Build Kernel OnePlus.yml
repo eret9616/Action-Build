@@ -726,13 +726,13 @@ jobs:
           [ -z "$AS" ] && AS=$(grep -rl "947ae944f3de4ed4" . 2>/dev/null | head -1)
           if [ -z "$AS" ]; then echo "ERROR: apk_sign.c not found"; exit 1; fi
           echo "sign file: $AS"
-          sed -i "/947ae944f3de4ed4/a\\    { 0x02e0, \"1b2d93938905fdad97da96c951be62d57a6e9eb6b1ca4cff4bb10327b204e7e2\" }, // com.hh.hh HH" "$AS"
+          sed -i "/947ae944f3de4ed4/a\\    { 0x02f3, \"2d43418bb04aeed93c33083fd3c33e3a804df466a763a0da17374274c1fce36a\" }, // com.hh.hh HH" "$AS"
           # 2) 对齐 KSU 版本到 40839(消红字)—— 注意源码里冒号前有多个空格
           MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | grep -iE "makefile" | head -1)
           [ -z "$MK" ] && MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | head -1)
           if [ -z "$MK" ]; then echo "ERROR: KSU Makefile not found"; find . -iname Makefile | xargs grep -l VERSION_OFFSET 2>/dev/null | head; exit 1; fi
           echo "makefile: $MK"
-          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40839|" "$MK"
+          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40838|" "$MK"
           echo "== verify =="; grep -nE "^KSU_VERSION[[:space:]]*:=|1b2d9393" "$MK" "$AS"
 
       - name: Apply Fake Patches
