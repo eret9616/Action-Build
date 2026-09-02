@@ -732,8 +732,30 @@ jobs:
           [ -z "$MK" ] && MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | head -1)
           if [ -z "$MK" ]; then echo "ERROR: KSU Makefile not found"; find . -iname Makefile | xargs grep -l VERSION_OFFSET 2>/dev/null | head; exit 1; fi
           echo "makefile: $MK"
-          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40899|" "$MK"
+          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40900|" "$MK"
           echo "== verify =="; grep -nE "^KSU_VERSION[[:space:]]*:=|2d43418b" "$MK" "$AS"
+
+      - name: Fix missing kernel_umount_feature_set (builtin 4.2.0 bug)
+        run: |
+          set -e
+          cd kernel_workspace/kernel_platform
+          KU=$(find . -path '*feature/kernel_umount.c' 2>/dev/null | head -1)
+          if [ -z "$KU" ]; then echo "kernel_umount.c not found, skip"; exit 0; fi
+          echo "kernel_umount: $KU"
+          if grep -q 'kernel_umount_feature_set' "$KU" && ! grep -qE 'int[[:space:]]+kernel_umount_feature_set' "$KU"; then
+            awk '/static const struct ksu_feature_handler kernel_umount_handler/ && !d {
+              print "static int kernel_umount_feature_set(u64 value)";
+              print "{";
+              print "    ksu_kernel_umount_enabled = (value != 0);";
+              print "    return 0;";
+              print "}";
+              print "";
+              d=1
+            } {print}' "$KU" > "$KU.tmp" && mv "$KU.tmp" "$KU"
+            echo "== injected kernel_umount_feature_set =="; grep -nE 'kernel_umount_feature_set|kernel_umount_handler' "$KU"
+          else
+            echo "no fix needed (already defined or symbol absent)"
+          fi
 
       - name: Apply Fake Patches
         if: ${{ github.event.inputs.SUSFS_META != '-1' }}
