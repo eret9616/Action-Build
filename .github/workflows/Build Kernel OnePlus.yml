@@ -1181,6 +1181,19 @@ jobs:
           echo "Disabling GPUEB for MTK kernel 5.10"
           sed -i '/obj-y.*gpueb/d' kernel_workspace/kernel-5.10/drivers/gpu/mediatek/Makefile
 
+      - name: Shim VMA_PAD_START for 5.10 (com.hh.hh)
+        run: |
+          set -e
+          TM="kernel_workspace/kernel-5.10/fs/proc/task_mmu.c"
+          [ -f "$TM" ] || TM=$(find kernel_workspace -path '*/fs/proc/task_mmu.c' | head -1)
+          echo "task_mmu: $TM"
+          if grep -q 'VMA_PAD_START' "$TM" && ! grep -q 'define VMA_PAD_START' "$TM"; then
+            printf '%s\n' '#ifndef VMA_PAD_START' '#define VMA_PAD_START(vma) ((vma)->vm_end)' '#endif' | cat - "$TM" > "$TM.tmp" && mv "$TM.tmp" "$TM"
+            echo "== VMA_PAD_START shim injected =="; head -6 "$TM"
+          else
+            echo "no shim needed (VMA_PAD_START absent or already defined)"
+          fi
+
       - name: Build Kernel FAST
         if: ${{ github.event.inputs.FAST_BUILD == 'true' }}
         id: fast_build
