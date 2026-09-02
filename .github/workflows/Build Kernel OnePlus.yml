@@ -732,8 +732,8 @@ jobs:
           [ -z "$MK" ] && MK=$(grep -rlE "VERSION_OFFSET[[:space:]]*:=" . 2>/dev/null | head -1)
           if [ -z "$MK" ]; then echo "ERROR: KSU Makefile not found"; find . -iname Makefile | xargs grep -l VERSION_OFFSET 2>/dev/null | head; exit 1; fi
           echo "makefile: $MK"
-          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40838|" "$MK"
-          echo "== verify =="; grep -nE "^KSU_VERSION[[:space:]]*:=|1b2d9393" "$MK" "$AS"
+          sed -i -E "s|^KSU_VERSION[[:space:]]*:=.*|KSU_VERSION := 40899|" "$MK"
+          echo "== verify =="; grep -nE "^KSU_VERSION[[:space:]]*:=|2d43418b" "$MK" "$AS"
 
       - name: Apply Fake Patches
         if: ${{ github.event.inputs.SUSFS_META != '-1' }}
